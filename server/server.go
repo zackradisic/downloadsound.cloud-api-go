@@ -205,6 +205,11 @@ func (s *Server) handleTrack() http.HandlerFunc {
 			return
 		}
 
+		if strings.Contains(body.URL, "/sets/") {
+			s.respondError(w, "URL is a playlist not a track", http.StatusBadRequest)
+			return
+		}
+
 		fmt.Println(body.URL)
 
 		uu := body.URL
