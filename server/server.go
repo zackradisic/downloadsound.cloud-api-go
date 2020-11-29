@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 
@@ -206,7 +207,34 @@ func (s *Server) handleTrack() http.HandlerFunc {
 
 		fmt.Println(body.URL)
 
-		track, err := s.scdl.GetTrackInfo(soundcloudapi.GetTrackInfoOptions{URL: body.URL})
+		uu := body.URL
+		if strings.Contains(body.URL, "/search") {
+			u, err := url.Parse(body.URL)
+			if err != nil {
+				s.respondError(w, "Invalid URL", http.StatusBadRequest)
+				return
+			}
+
+			query := u.Query().Get("q")
+			response, err := s.scdl.Search(soundcloudapi.SearchOptions{
+				Query: query,
+				Limit: 1,
+				Kind:  soundcloudapi.SearchKindTrack,
+			})
+
+			data, err := json.Marshal(response)
+			trackQuery := &soundcloudapi.PaginatedTrackQuery{}
+
+			err = json.Unmarshal(data, trackQuery)
+			if err != nil || len(trackQuery.Collection) == 0 {
+				s.respondError(w, "Invalid URL", http.StatusBadRequest)
+				return
+			}
+
+			uu = trackQuery.Collection[0].PermalinkURL
+		}
+
+		track, err := s.scdl.GetTrackInfo(soundcloudapi.GetTrackInfoOptions{URL: uu})
 
 		if failedRequest, ok := err.(*soundcloudapi.FailedRequestError); ok {
 			fmt.Printf("%d: %s\n", failedRequest.Status, failedRequest.ErrMsg)
