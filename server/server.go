@@ -62,6 +62,7 @@ func (s *Server) setupRoutes() {
 
 	s.addRoute(s.router, "POST", "/track", s.handleTrack())
 	s.addRoute(s.router, "POST", "/playlist", s.handlePlaylist())
+	s.addRoute(s.router, "POST", "/likes", s.handleLikes())
 }
 
 func (s *Server) addRoute(router *mux.Router, method string, path string, handler func(http.ResponseWriter, *http.Request)) {
@@ -417,6 +418,152 @@ func (s *Server) handlePlaylist() http.HandlerFunc {
 			Tracks:            mediaURLs,
 			CopyrightedTracks: copyrightedTracks,
 			Author:            playlist.User,
+			ImageURL:          imageURL}, http.StatusOK)
+
+	}
+}
+
+func (s *Server) handleLikes() http.HandlerFunc {
+
+	type requestBody struct {
+		URL string `json:"url"`
+	}
+
+	type responseBody struct {
+		URL               string             `json:"url"`
+		Title             string             `json:"title"`
+		Tracks            []trackInfo        `json:"tracks"`
+		CopyrightedTracks []string           `json:"copyrightedTracks"`
+		Author            soundcloudapi.User `json:"author"`
+		ImageURL          string             `json:"imageURL"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", s.frontendURL)
+
+		decoder := json.NewDecoder(r.Body)
+		body := &requestBody{}
+		err := decoder.Decode(body)
+
+		if err != nil {
+			s.respondError(w, "Invalid request body", http.StatusBadRequest)
+			return
+		}
+
+		if !soundcloudapi.IsURL(body.URL) {
+			s.respondError(w, "URL is not a valid SoundCloud link", http.StatusUnprocessableEntity)
+			return
+		}
+
+		fmt.Println(body.URL)
+
+		user, err := s.scdl.GetUser(soundcloudapi.GetUserOptions{ProfileURL: body.URL})
+
+		if failedRequest, ok := err.(*soundcloudapi.FailedRequestError); ok {
+			if failedRequest.Status == 404 {
+				s.respondError(w, "Couldn't find that user", 404)
+				return
+			}
+
+			s.respondError(w, failedRequest.ErrMsg, failedRequest.Status)
+			return
+		}
+
+		if err != nil {
+			fmt.Println(err.Error())
+			s.respondError(w, "Internal server error occurred", http.StatusInternalServerError)
+			return
+		}
+
+		likes, err := s.scdl.GetLikes(soundcloudapi.GetLikesOptions{
+			ID: user.ID,
+		})
+
+		if failedRequest, ok := err.(*soundcloudapi.FailedRequestError); ok {
+			if failedRequest.Status == 404 {
+				s.respondError(w, "Couldn't find that user", 404)
+				return
+			}
+
+			s.respondError(w, failedRequest.ErrMsg, failedRequest.Status)
+			return
+		}
+
+		if err != nil {
+			fmt.Println(err.Error())
+			s.respondError(w, "Internal server error occurred", http.StatusInternalServerError)
+			return
+		}
+
+		copyrightedTracks := []string{}
+		urls := []trackInfo{}
+		artworkURL := ""
+
+		for _, like := range likes.Collection {
+			if like.Track.Kind != "track" {
+				continue
+			}
+
+			link := ""
+			hls := true
+			for _, transcoding := range like.Track.Media.Transcodings {
+				if transcoding.Format.Protocol == "progressive" {
+					link = transcoding.URL
+					hls = false
+					break
+				}
+			}
+
+			if len(like.Track.Media.Transcodings) == 0 {
+				copyrightedTracks = append(copyrightedTracks, like.Track.Title)
+				continue
+			}
+
+			if link == "" {
+				link = like.Track.Media.Transcodings[0].URL
+			}
+
+			if strings.Contains(link, "/preview/") {
+				copyrightedTracks = append(copyrightedTracks, like.Track.Title)
+				// urls = append(urls, "")
+			} else {
+				urls = append(urls, trackInfo{Title: like.Track.Title, HLS: hls, URL: link})
+				if like.Track.ArtworkURL != "" && artworkURL == "" {
+					artworkURL = like.Track.ArtworkURL
+				}
+			}
+		}
+
+		mediaURLs, err := s.getMediaURLMany(urls)
+
+		if failedRequest, ok := err.(*failedRequestError); ok {
+			fmt.Printf("%d: %s\n", failedRequest.status, failedRequest.errMsg)
+			if failedRequest.status == 404 {
+				s.respondError(w, "Could not find one of the tracks in the playlist.", failedRequest.status)
+				return
+			}
+
+			s.respondJSON(w, failedRequest.errMsg, failedRequest.status)
+			return
+		}
+
+		if err != nil {
+			fmt.Println(err.Error())
+			s.respondError(w, "Internal server error occurred", http.StatusInternalServerError)
+			return
+		}
+
+		imageURL := s.getIMGURL(user.AvatarURL)
+		if imageURL == "" {
+			imageURL = s.getIMGURL(artworkURL)
+		}
+
+		s.respondJSON(w, &responseBody{
+			URL:               body.URL,
+			Title:             fmt.Sprintf("%s's Likes", user.Username),
+			Tracks:            mediaURLs,
+			CopyrightedTracks: copyrightedTracks,
+			Author:            user,
 			ImageURL:          imageURL}, http.StatusOK)
 
 	}
