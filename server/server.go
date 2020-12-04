@@ -476,7 +476,8 @@ func (s *Server) handleLikes() http.HandlerFunc {
 		}
 
 		likes, err := s.scdl.GetLikes(soundcloudapi.GetLikesOptions{
-			ID: user.ID,
+			ID:    user.ID,
+			Limit: user.Likes,
 		})
 
 		if failedRequest, ok := err.(*soundcloudapi.FailedRequestError); ok {
