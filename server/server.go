@@ -457,7 +457,7 @@ func (s *Server) handleLikes() http.HandlerFunc {
 
 		fmt.Println(body.URL)
 
-		user, err := s.scdl.GetUser(soundcloudapi.GetUserOptions{ProfileURL: body.URL})
+		user, err := s.scdl.GetUser(soundcloudapi.GetUserOptions{ProfileURL: strings.TrimRight(body.URL, "/")})
 
 		if failedRequest, ok := err.(*soundcloudapi.FailedRequestError); ok {
 			if failedRequest.Status == 404 {
