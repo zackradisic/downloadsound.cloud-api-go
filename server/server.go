@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
 	soundcloudapi "github.com/zackradisic/soundcloud-api"
@@ -142,6 +143,9 @@ func (s *Server) getMediaURL(url string) (string, error) {
 }
 
 func (s *Server) getMediaURLMany(urls []trackInfo) ([]trackInfo, error) {
+	if len(urls) == 0 {
+		return nil, errors.New("No URLs provided")
+	}
 	type result struct {
 		url   string
 		index int
@@ -330,7 +334,13 @@ func (s *Server) handlePlaylist() http.HandlerFunc {
 			return
 		}
 
-		if !soundcloudapi.IsURL(body.URL) || !strings.Contains(body.URL, "/sets/") {
+		u, err := url.Parse(body.URL)
+		if err != nil {
+			s.respondError(w, "Invalid URL provided", http.StatusBadRequest)
+			return
+		}
+
+		if !soundcloudapi.IsURL(body.URL) || !strings.Contains(u.Path, "/sets/") {
 			s.respondError(w, "URL is not a playlist", http.StatusUnprocessableEntity)
 			return
 		}
@@ -360,7 +370,6 @@ func (s *Server) handlePlaylist() http.HandlerFunc {
 		urls := []trackInfo{}
 
 		for _, track := range playlist.Tracks {
-
 			link := ""
 			hls := true
 			for _, transcoding := range track.Media.Transcodings {
@@ -419,7 +428,6 @@ func (s *Server) handlePlaylist() http.HandlerFunc {
 			CopyrightedTracks: copyrightedTracks,
 			Author:            playlist.User,
 			ImageURL:          imageURL}, http.StatusOK)
-
 	}
 }
 
@@ -594,5 +602,11 @@ func (s *Server) respondError(w http.ResponseWriter, message string, status int)
 // Run runs the server
 func (s *Server) Run(host string) {
 	fmt.Println("Running server on " + host)
-	log.Fatal(http.ListenAndServe(host, s.router))
+	srv := &http.Server{
+		WriteTimeout: 10 * time.Second,
+		ReadTimeout:  1 * time.Second,
+		Addr:         host,
+		Handler:      http.TimeoutHandler(s.router, 5*time.Second, "Request timed out."),
+	}
+	log.Fatal(srv.ListenAndServe())
 }
