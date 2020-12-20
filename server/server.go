@@ -31,7 +31,9 @@ func New() *Server {
 		log.Fatal("frontendURL is required")
 	}
 
-	scdl, err := soundcloudapi.New("")
+	scdl, err := soundcloudapi.New("", &http.Client{
+		Timeout: time.Second * 5,
+	})
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -235,19 +237,25 @@ func (s *Server) handleTrack() http.HandlerFunc {
 			response, err := s.scdl.Search(soundcloudapi.SearchOptions{
 				Query: query,
 				Limit: 1,
-				Kind:  soundcloudapi.SearchKindTrack,
+				Kind:  soundcloudapi.KindTrack,
 			})
 
 			data, err := json.Marshal(response)
-			trackQuery := &soundcloudapi.PaginatedTrackQuery{}
+			pgQuery := &soundcloudapi.PaginatedQuery{}
 
-			err = json.Unmarshal(data, trackQuery)
-			if err != nil || len(trackQuery.Collection) == 0 {
+			err = json.Unmarshal(data, pgQuery)
+			if err != nil {
 				s.respondError(w, "Invalid URL", http.StatusBadRequest)
 				return
 			}
 
-			uu = trackQuery.Collection[0].PermalinkURL
+			track, err := pgQuery.GetTracks()
+			if err != nil || len(track) == 0 {
+				s.respondError(w, "Invalid URL", http.StatusBadRequest)
+				return
+			}
+
+			uu = track[0].PermalinkURL
 		}
 
 		track, err := s.scdl.GetTrackInfo(soundcloudapi.GetTrackInfoOptions{URL: uu})
@@ -514,7 +522,13 @@ func (s *Server) handleLikes() http.HandlerFunc {
 		urls := []trackInfo{}
 		artworkURL := ""
 
-		for _, like := range likes.Collection {
+		likeS, err := likes.GetLikes()
+		if err != nil {
+			s.respondError(w, "Invalid URL", http.StatusBadRequest)
+			return
+		}
+
+		for _, like := range likeS {
 			if like.Track.Kind != "track" {
 				continue
 			}
@@ -564,7 +578,12 @@ func (s *Server) handleLikes() http.HandlerFunc {
 
 		if err != nil {
 			fmt.Println(err.Error())
-			s.respondError(w, "Internal server error occurred", http.StatusInternalServerError)
+			msg := "Internal server error occurred"
+			if err.Error() == "No URLs provided" {
+				s.respondError(w, "None of those tracks can be downloaded.", http.StatusConflict)
+				return
+			}
+			s.respondError(w, msg, http.StatusInternalServerError)
 			return
 		}
 
