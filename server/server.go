@@ -207,18 +207,12 @@ func (s *Server) handleTrack() http.HandlerFunc {
 			return
 		}
 
-		u, err := url.Parse(body.URL)
-		if err != nil {
-			s.respondError(w, "Invalid URL provided", http.StatusBadRequest)
-			return
-		}
-
 		if !soundcloudapi.IsURL(body.URL) {
 			s.respondError(w, "URL is not a track", http.StatusUnprocessableEntity)
 			return
 		}
 
-		if strings.Contains(u.Path, "/sets/") {
+		if soundcloudapi.IsPlaylist(body.URL) {
 			s.respondError(w, "URL is a playlist not a track", http.StatusBadRequest)
 			return
 		}
@@ -226,7 +220,7 @@ func (s *Server) handleTrack() http.HandlerFunc {
 		fmt.Println(body.URL)
 
 		uu := body.URL
-		if strings.Contains(body.URL, "/search") {
+		if soundcloudapi.IsSearchURL(body.URL) {
 			u, err := url.Parse(body.URL)
 			if err != nil {
 				s.respondError(w, "Invalid URL", http.StatusBadRequest)
@@ -348,13 +342,7 @@ func (s *Server) handlePlaylist() http.HandlerFunc {
 			return
 		}
 
-		u, err := url.Parse(body.URL)
-		if err != nil {
-			s.respondError(w, "Invalid URL provided", http.StatusBadRequest)
-			return
-		}
-
-		if !soundcloudapi.IsURL(body.URL) || !strings.Contains(u.Path, "/sets/") {
+		if !soundcloudapi.IsURL(body.URL) || !soundcloudapi.IsPlaylist(body.URL) {
 			s.respondError(w, "URL is not a playlist", http.StatusUnprocessableEntity)
 			return
 		}
