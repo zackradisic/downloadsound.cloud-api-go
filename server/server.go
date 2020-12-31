@@ -94,9 +94,10 @@ func (f *failedRequestError) Error() string {
 }
 
 type trackInfo struct {
-	Title string `json:"title"`
-	URL   string `json:"url"`
-	HLS   bool   `json:"hls"`
+	Title  string `json:"title"`
+	URL    string `json:"url"`
+	HLS    bool   `json:"hls"`
+	Author string `json:"author"`
 }
 
 func (s *Server) getIMGURL(url string) string {
@@ -395,7 +396,7 @@ func (s *Server) handlePlaylist() http.HandlerFunc {
 				copyrightedTracks = append(copyrightedTracks, track.Title)
 				// urls = append(urls, "")
 			} else {
-				urls = append(urls, trackInfo{Title: track.Title, HLS: hls, URL: link})
+				urls = append(urls, trackInfo{Title: track.Title, HLS: hls, URL: link, Author: track.User.Username})
 			}
 		}
 
@@ -544,7 +545,7 @@ func (s *Server) handleLikes() http.HandlerFunc {
 				copyrightedTracks = append(copyrightedTracks, like.Track.Title)
 				// urls = append(urls, "")
 			} else {
-				urls = append(urls, trackInfo{Title: like.Track.Title, HLS: hls, URL: link})
+				urls = append(urls, trackInfo{Title: like.Track.Title, HLS: hls, URL: link, Author: like.Track.User.Username})
 				if like.Track.ArtworkURL != "" && artworkURL == "" {
 					artworkURL = like.Track.ArtworkURL
 				}
