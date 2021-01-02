@@ -417,7 +417,7 @@ func (s *Server) handlePlaylist() http.HandlerFunc {
 			fmt.Println(err.Error())
 			msg := "Internal server error occurred"
 			if err.Error() == "No URLs provided" {
-				s.respondError(w, "None of those tracks can be downloaded.", http.StatusConflict)
+				s.respondError(w, "None of those tracks can be downloaded. (Likely due to copyright)", http.StatusConflict)
 				return
 			}
 			s.respondError(w, msg, http.StatusInternalServerError)
@@ -574,7 +574,7 @@ func (s *Server) handleLikes() http.HandlerFunc {
 			fmt.Println(err.Error())
 			msg := "Internal server error occurred"
 			if err.Error() == "No URLs provided" {
-				s.respondError(w, "None of those tracks can be downloaded.", http.StatusConflict)
+				s.respondError(w, "None of those tracks can be downloaded. (Likely due to copyright)", http.StatusConflict)
 				return
 			}
 			s.respondError(w, msg, http.StatusInternalServerError)
