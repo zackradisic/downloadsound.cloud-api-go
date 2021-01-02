@@ -415,7 +415,12 @@ func (s *Server) handlePlaylist() http.HandlerFunc {
 
 		if err != nil {
 			fmt.Println(err.Error())
-			s.respondError(w, "Internal server error occurred", http.StatusInternalServerError)
+			msg := "Internal server error occurred"
+			if err.Error() == "No URLs provided" {
+				s.respondError(w, "None of those tracks can be downloaded.", http.StatusConflict)
+				return
+			}
+			s.respondError(w, msg, http.StatusInternalServerError)
 			return
 		}
 
