@@ -31,8 +31,12 @@ func New() *Server {
 		log.Fatal("frontendURL is required")
 	}
 
-	scdl, err := soundcloudapi.New("", &http.Client{
-		Timeout: time.Second * 5,
+	scdl, err := soundcloudapi.New(soundcloudapi.APIOptions{
+		HTTPClient: &http.Client{
+			Timeout: time.Second * 5,
+		},
+		StripMobilePrefix:   true,
+		ConvertFirebaseURLs: true,
 	})
 	if err != nil {
 		log.Fatal(err.Error())
@@ -213,7 +217,7 @@ func (s *Server) handleTrack() http.HandlerFunc {
 			return
 		}
 
-		if soundcloudapi.IsPlaylist(body.URL) {
+		if soundcloudapi.IsPlaylistURL(body.URL) {
 			s.respondError(w, "URL is a playlist not a track", http.StatusBadRequest)
 			return
 		}
@@ -343,7 +347,7 @@ func (s *Server) handlePlaylist() http.HandlerFunc {
 			return
 		}
 
-		if !soundcloudapi.IsURL(body.URL) || !soundcloudapi.IsPlaylist(body.URL) {
+		if !soundcloudapi.IsURL(body.URL) || !soundcloudapi.IsPlaylistURL(body.URL) {
 			s.respondError(w, "URL is not a playlist", http.StatusUnprocessableEntity)
 			return
 		}
