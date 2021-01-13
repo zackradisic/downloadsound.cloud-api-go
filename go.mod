@@ -4,5 +4,5 @@ go 1.15
 
 require (
 	github.com/gorilla/mux v1.8.0
-	github.com/zackradisic/soundcloud-api v0.1.3
+	github.com/zackradisic/soundcloud-api v0.1.4
 )

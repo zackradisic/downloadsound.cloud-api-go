@@ -212,7 +212,7 @@ func (s *Server) handleTrack() http.HandlerFunc {
 			return
 		}
 
-		if !soundcloudapi.IsURL(body.URL) {
+		if !s.scdl.IsURL(body.URL) {
 			s.respondError(w, "URL is not a track", http.StatusUnprocessableEntity)
 			return
 		}
@@ -347,7 +347,7 @@ func (s *Server) handlePlaylist() http.HandlerFunc {
 			return
 		}
 
-		if !soundcloudapi.IsURL(body.URL) || !soundcloudapi.IsPlaylistURL(body.URL) {
+		if !s.scdl.IsURL(body.URL) || !soundcloudapi.IsPlaylistURL(body.URL) {
 			s.respondError(w, "URL is not a playlist", http.StatusUnprocessableEntity)
 			return
 		}
@@ -470,7 +470,7 @@ func (s *Server) handleLikes() http.HandlerFunc {
 			return
 		}
 
-		if !soundcloudapi.IsURL(body.URL) {
+		if !s.scdl.IsURL(body.URL) {
 			s.respondError(w, "URL is not a valid SoundCloud link", http.StatusUnprocessableEntity)
 			return
 		}
