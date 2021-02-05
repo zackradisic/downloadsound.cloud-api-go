@@ -162,7 +162,7 @@ func (s *Server) getMediaURLMany(urls []trackInfo) ([]trackInfo, error) {
 
 	for i, d := range urls {
 		go func(i int, url string) {
-			mediaURL, err := s.getMediaURL(url)
+			mediaURL, err := s.scdl.GetDownloadURL(url, "progressive")
 			if err != nil {
 				errChan <- err
 				return
@@ -276,35 +276,12 @@ func (s *Server) handleTrack() http.HandlerFunc {
 			return
 		}
 
-		url := ""
-
 		if len(track[0].Media.Transcodings) == 0 {
 			s.respondError(w, fmt.Sprintf("The track '%s' cannot be downloaded due to copyright.\n", track[0].Title), http.StatusBadRequest)
 			return
 		}
 
-		for _, transcoding := range track[0].Media.Transcodings {
-			if transcoding.Format.Protocol == "progressive" {
-				url = transcoding.URL
-			}
-		}
-
-		if url == "" {
-			url = track[0].Media.Transcodings[0].URL
-		}
-
-		mediaURL, err := s.getMediaURL(url)
-
-		if failedRequest, ok := err.(*failedRequestError); ok {
-			fmt.Printf("%d: %s\n", failedRequest.status, failedRequest.errMsg)
-			if failedRequest.status == 404 {
-				s.respondError(w, "Could not finds that track.", failedRequest.status)
-				return
-			}
-
-			s.respondJSON(w, failedRequest.errMsg, failedRequest.status)
-			return
-		}
+		mediaURL, err := s.scdl.GetDownloadURL(body.URL, "progressive")
 
 		if err != nil {
 			fmt.Println(err.Error())
@@ -387,6 +364,10 @@ func (s *Server) handlePlaylist() http.HandlerFunc {
 				}
 			}
 
+			if track.Downloadable {
+				hls = false
+			}
+
 			if len(track.Media.Transcodings) == 0 {
 				copyrightedTracks = append(copyrightedTracks, track.Title)
 				continue
@@ -400,7 +381,7 @@ func (s *Server) handlePlaylist() http.HandlerFunc {
 				copyrightedTracks = append(copyrightedTracks, track.Title)
 				// urls = append(urls, "")
 			} else {
-				urls = append(urls, trackInfo{Title: track.Title, HLS: hls, URL: link, Author: track.User.Username})
+				urls = append(urls, trackInfo{Title: track.Title, HLS: hls, URL: track.PermalinkURL, Author: track.User.Username})
 			}
 		}
 
@@ -541,6 +522,10 @@ func (s *Server) handleLikes() http.HandlerFunc {
 				}
 			}
 
+			if like.Track.Downloadable {
+				hls = true
+			}
+
 			if len(like.Track.Media.Transcodings) == 0 {
 				copyrightedTracks = append(copyrightedTracks, like.Track.Title)
 				continue
@@ -554,7 +539,7 @@ func (s *Server) handleLikes() http.HandlerFunc {
 				copyrightedTracks = append(copyrightedTracks, like.Track.Title)
 				// urls = append(urls, "")
 			} else {
-				urls = append(urls, trackInfo{Title: like.Track.Title, HLS: hls, URL: link, Author: like.Track.User.Username})
+				urls = append(urls, trackInfo{Title: like.Track.Title, HLS: hls, URL: like.Track.PermalinkURL, Author: like.Track.User.Username})
 				if like.Track.ArtworkURL != "" && artworkURL == "" {
 					artworkURL = like.Track.ArtworkURL
 				}
