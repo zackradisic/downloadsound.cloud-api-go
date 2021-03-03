@@ -62,6 +62,8 @@ func (s *Server) setupRoutes() {
 	s.addRoute(s.router, "POST", "/track", s.validateLink(linkTypeTrack, s.handleTrack()))
 	s.addRoute(s.router, "POST", "/playlist", s.validateLink(linkTypePlaylist, s.handlePlaylist()))
 	s.addRoute(s.router, "POST", "/likes", s.validateLink(linkTypeLikes, s.handleLikes()))
+	s.addRoute(s.router, "POST", "/report", s.handleReport())
+	// s.addRoute(s.router, "POST", "/clientid", s.handleClientID())
 }
 
 func (s *Server) addRoute(router *mux.Router, method string, path string, handler func(http.ResponseWriter, *http.Request)) {

@@ -52,6 +52,16 @@ func (s *Server) handleTrack() http.HandlerFunc {
 			return
 		}
 
+		// Profile links will pass detection
+		if track[0].Kind != "track" {
+			desired := "PLAYLIST"
+			if track[0].Kind == "user" {
+				desired = "LIKES"
+			}
+			s.respondError(w, fmt.Sprintf("That isn't a track url! (hint: switch to the '%s' tab 👉)", desired), http.StatusBadRequest)
+			return
+		}
+
 		if len(track[0].Media.Transcodings) == 0 {
 			s.respondError(w, fmt.Sprintf("The track '%s' cannot be downloaded due to copyright.\n", track[0].Title), http.StatusBadRequest)
 			return

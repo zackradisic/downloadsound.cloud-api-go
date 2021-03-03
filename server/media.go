@@ -84,8 +84,8 @@ func (s *Server) getMediaURL(url string) (string, error) {
 	return body.URL, nil
 }
 
-// getMediaURLMany modifies the given trackInfo array by fetching the
-// media URL for each of its elements and setting its URL property
+// getMediaURLMany concurrently fetches all the URLs for the given tracks
+// and sets each tracks URL
 func (s *Server) getMediaURLMany(urls []trackInfo) ([]trackInfo, error) {
 	if len(urls) == 0 {
 		return nil, errors.New("No URLs provided")
