@@ -80,7 +80,7 @@ func (s *Server) Run(host string) {
 	fmt.Println("Running server on " + host)
 	srv := &http.Server{
 		Addr:    host,
-		Handler: http.TimeoutHandler(s.router, 15*time.Second, "Request timed out."),
+		Handler: http.TimeoutHandler(s.router, 20*time.Second, "Request timed out."),
 	}
 	log.Fatal(srv.ListenAndServe())
 }

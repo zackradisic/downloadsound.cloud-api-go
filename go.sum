@@ -22,3 +22,5 @@ github.com/zackradisic/soundcloud-api v0.1.6-0.20210205180839-bff0fe64e6b6 h1:jR
 github.com/zackradisic/soundcloud-api v0.1.6-0.20210205180839-bff0fe64e6b6/go.mod h1:ycGIZFVZdUVC7B8pcfgze1bRBePPmjYlIGnRptKByQ0=
 github.com/zackradisic/soundcloud-api v0.1.6-0.20210205185947-79cc70bb1bb9 h1:tmOfhzTY2J9kmayTSrW5gxjDRFbtZBXv8uc9xK4Ztzg=
 github.com/zackradisic/soundcloud-api v0.1.6-0.20210205185947-79cc70bb1bb9/go.mod h1:ycGIZFVZdUVC7B8pcfgze1bRBePPmjYlIGnRptKByQ0=
+golang.org/x/sync v0.0.0-20210220032951-036812b2e83c h1:5KslGYwFpkhGh+Q16bwMP3cOontH8FOep7tGV86Y7SQ=
+golang.org/x/sync v0.0.0-20210220032951-036812b2e83c/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=

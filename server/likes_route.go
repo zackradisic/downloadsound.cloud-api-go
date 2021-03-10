@@ -55,10 +55,47 @@ func (s *Server) handleLikes() http.HandlerFunc {
 			return
 		}
 
-		likes, err := s.scdl.GetLikes(soundcloudapi.GetLikesOptions{
+		options := soundcloudapi.GetLikesOptions{
 			ID:    user.ID,
 			Limit: user.Likes,
-		})
+			Type:  "track",
+		}
+
+		copyrightedTracks := []string{}
+		urls := []trackInfo{}
+		artworkURL := ""
+
+		likeS := make([]soundcloudapi.Like, user.Likes)
+		if user.Likes <= 200 {
+			// TODO: Should clean this up, error checking is getting a bit ridiculous.
+			// Here is a great pattern to use: https://thingsthatkeepmeupatnight.dev/posts/golang-http-handler-errors/
+			likes, err := s.scdl.GetLikes(options)
+			if failedRequest, ok := err.(*soundcloudapi.FailedRequestError); ok {
+				if failedRequest.Status == 404 {
+					s.respondError(w, "Couldn't find that user", 404)
+					return
+				}
+
+				s.respondError(w, failedRequest.ErrMsg, failedRequest.Status)
+				return
+			}
+
+			if err != nil {
+				s.respondError(w, "Internal server error occurred", http.StatusInternalServerError)
+				return
+			}
+			likeS, err = likes.GetLikes()
+			if err != nil {
+				s.respondError(w, "Internal server error occurred", http.StatusInternalServerError)
+				return
+			}
+		} else {
+			options.Limit = 1000
+			err = s.getLikesBulk(r.Context(), &likeS, options)
+			if err != nil {
+				s.respondError(w, "Internal server error occurred", http.StatusInternalServerError)
+			}
+		}
 
 		if failedRequest, ok := err.(*soundcloudapi.FailedRequestError); ok {
 			if failedRequest.Status == 404 {
@@ -73,16 +110,6 @@ func (s *Server) handleLikes() http.HandlerFunc {
 		if err != nil {
 			fmt.Println(err.Error())
 			s.respondError(w, "Internal server error occurred", http.StatusInternalServerError)
-			return
-		}
-
-		copyrightedTracks := []string{}
-		urls := []trackInfo{}
-		artworkURL := ""
-
-		likeS, err := likes.GetLikes()
-		if err != nil {
-			s.respondError(w, "Invalid URL", http.StatusBadRequest)
 			return
 		}
 
