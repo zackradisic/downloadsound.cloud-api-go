@@ -65,10 +65,6 @@ func (s *Server) getLikesBulk(ctx context.Context, arr *[]soundcloudapi.Like, op
 			return err
 		}
 
-		if likes.NextHref == "" {
-			return nil
-		}
-
 		l, err := likes.GetLikes()
 		if err != nil {
 			return err
@@ -78,6 +74,11 @@ func (s *Server) getLikesBulk(ctx context.Context, arr *[]soundcloudapi.Like, op
 			(*arr)[i] = like
 			i++
 		}
+
+		if likes.NextHref == "" {
+			return nil
+		}
+
 		u, err := url.Parse(likes.NextHref)
 		if err != nil {
 			return err
