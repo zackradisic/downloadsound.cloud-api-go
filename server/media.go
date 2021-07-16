@@ -31,10 +31,11 @@ func (f *failedRequestError) Error() string {
 }
 
 type trackInfo struct {
-	Title  string `json:"title"`
-	URL    string `json:"url"`
-	HLS    bool   `json:"hls"`
-	Author string `json:"author"`
+	Title    string `json:"title"`
+	URL      string `json:"url"`
+	HLS      bool   `json:"hls"`
+	Author   string `json:"author"`
+	ImageURL string `json:"imageURL"`
 }
 
 // getIMGURL returns the URL to download the image specified by the given url.

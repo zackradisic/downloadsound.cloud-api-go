@@ -130,9 +130,9 @@ func (s *Server) handleLikes() http.HandlerFunc {
 				}
 			}
 
-			if like.Track.Downloadable {
-				hls = true
-			}
+			// if like.Track.Downloadable {
+			// 	hls = false
+			// }
 
 			if len(like.Track.Media.Transcodings) == 0 {
 				copyrightedTracks = append(copyrightedTracks, like.Track.Title)
@@ -147,7 +147,18 @@ func (s *Server) handleLikes() http.HandlerFunc {
 				copyrightedTracks = append(copyrightedTracks, like.Track.Title)
 				// urls = append(urls, "")
 			} else {
-				urls = append(urls, trackInfo{Title: like.Track.Title, HLS: hls, URL: like.Track.PermalinkURL, Author: like.Track.User.Username})
+				imageURL := s.getIMGURL(like.Track.ArtworkURL)
+				if imageURL == "" {
+					imageURL = s.getIMGURL(like.Track.User.AvatarURL)
+				}
+				urls = append(urls, trackInfo{
+					Title:    like.Track.Title,
+					HLS:      hls,
+					URL:      like.Track.PermalinkURL,
+					Author:   like.Track.User.Username,
+					ImageURL: imageURL,
+				})
+
 				if like.Track.ArtworkURL != "" && artworkURL == "" {
 					artworkURL = like.Track.ArtworkURL
 				}
@@ -155,6 +166,9 @@ func (s *Server) handleLikes() http.HandlerFunc {
 		}
 
 		mediaURLs, err := s.getMediaURLMany(urls)
+		for _, t := range mediaURLs {
+			fmt.Println(t.URL)
+		}
 
 		if failedRequest, ok := err.(*failedRequestError); ok {
 			fmt.Printf("%d: %s\n", failedRequest.status, failedRequest.errMsg)

@@ -71,9 +71,9 @@ func (s *Server) handlePlaylist() http.HandlerFunc {
 				}
 			}
 
-			if track.Downloadable {
-				hls = false
-			}
+			// if track.Downloadable {
+			// 	hls = false
+			// }
 
 			if len(track.Media.Transcodings) == 0 {
 				copyrightedTracks = append(copyrightedTracks, track.Title)
@@ -88,7 +88,17 @@ func (s *Server) handlePlaylist() http.HandlerFunc {
 				copyrightedTracks = append(copyrightedTracks, track.Title)
 				// urls = append(urls, "")
 			} else {
-				urls = append(urls, trackInfo{Title: track.Title, HLS: hls, URL: track.PermalinkURL, Author: track.User.Username})
+				imageURL := s.getIMGURL(track.ArtworkURL)
+				if imageURL == "" {
+					imageURL = s.getIMGURL(track.User.AvatarURL)
+				}
+				urls = append(urls, trackInfo{
+					Title:    track.Title,
+					HLS:      hls,
+					URL:      track.PermalinkURL,
+					Author:   track.User.Username,
+					ImageURL: imageURL,
+				})
 			}
 		}
 
